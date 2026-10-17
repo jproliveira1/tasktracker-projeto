@@ -1,8 +1,29 @@
-"""
-TaskTracker - Aplicação CLI em Python (Fase 2)
-Autor: João Pedro Rezende Oliveira
-Descrição: Sistema de gerenciamento de tarefas estruturado a partir do planejamento lógico.
-"""
+
+import json
+import os
+
+ARQUIVO_DADOS = "tasks.json"
+
+
+def carregar_dados():
+    """Carrega as tarefas salvas no arquivo JSON, se ele existir."""
+    if os.path.exists(ARQUIVO_DADOS):
+        try:
+            with open(ARQUIVO_DADOS, "r", encoding="utf-8") as arquivo:
+                return json.load(arquivo)
+        except Exception as e:
+            print(f"[AVISO] Erro ao carregar os dados salvos: {e}")
+    return []
+
+
+def salvar_dados(lista_tarefas):
+    """Salva a lista de tarefas atual no arquivo JSON de forma automática."""
+    try:
+        with open(ARQUIVO_DADOS, "w", encoding="utf-8") as arquivo:
+            json.dump(lista_tarefas, arquivo, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(f"[ERRO] Não foi possível salvar os dados: {e}")
+
 
 def exibir_menu():
     """Exibe o menu principal de navegação da aplicação."""
@@ -19,7 +40,7 @@ def exibir_menu():
 
 
 def cadastrar_tarefa(lista_tarefas):
-    """Realiza o cadastro de uma nova tarefa com validação estrita dos campos."""
+    """Realiza o cadastro de uma nova tarefa com validação estrita dos campos[cite: 19]."""
     print("\n--- CADASTRO DE NOVA TAREFA ---")
     
     # 1. Validação do Título (Obrigatório e não vazio)[cite: 19]
@@ -59,14 +80,15 @@ def cadastrar_tarefa(lista_tarefas):
         "status": "Pendente"  # Regra: Toda tarefa nasce com status Pendente[cite: 19]
     }
 
-    # Adiciona à lista
+    # Adiciona à lista e persiste os dados
     lista_tarefas.append(nova_tarefa)
-    print(f"\n[SUCESSO] Tarefa '{titulo}' cadastrada com sucesso!")
+    salvar_dados(lista_tarefas)
+    print(f"\n[SUCESSO] Tarefa '{titulo}' cadastrada e salva com sucesso!")
 
 
 def visualizar_tarefas(lista_tarefas):
     """Exibe a lista de tarefas ordenadas por prioridade ou avisa se estiver vazia."""
-    print("\n--- LISTA DE TAREFAS CADASTRADAS (ORDENADAS) ---")
+    print("\n--- LISTA DE TAREFAS CADASTRADAS ---")
     
     # Regra de verificação de lista vazia[cite: 19]
     if not lista_tarefas:
@@ -100,14 +122,13 @@ def visualizar_tarefas(lista_tarefas):
 
 def remover_tarefa(lista_tarefas, indice_tarefa=None):
     """
-    Remove uma tarefa da lista.
-    Caso a tarefa não esteja concluída, exige confirmação do usuário.
+    Remove uma tarefa da lista e atualiza o arquivo JSON.
+    Caso a tarefa não esteja concluída, exige confirmação do usuário[cite: 23].
     """
     if not lista_tarefas:
         print("Aviso: Nenhuma tarefa cadastrada para ser removida.")
         return False
 
-    # Se não foi passado um índice diretamente, solicita ao usuário
     if indice_tarefa is None:
         visualizar_tarefas(lista_tarefas)
         while True:
@@ -137,16 +158,17 @@ def remover_tarefa(lista_tarefas, indice_tarefa=None):
             print("Remoção cancelada pelo usuário.")
             return False
 
-    # Remoção da lista
+    # Remove da lista e atualiza o arquivo de persistência
     lista_tarefas.pop(indice_tarefa)
-    print(f"\n[SUCESSO] Tarefa '{tarefa['titulo']}' removida com sucesso!")
+    salvar_dados(lista_tarefas)
+    print(f"\n[SUCESSO] Tarefa '{tarefa['titulo']}' removida e alteração salva com sucesso!")
     return True
 
 
 def concluir_tarefa(lista_tarefas):
     """
-    Permite ao usuário marcar uma tarefa como 'Concluído'
-    e opcionalmente removê-la da lista logo em seguida.
+    Permite marcar uma tarefa como 'Concluído', atualiza o arquivo 
+    e opcionalmente remove-a da lista[cite: 23].
     """
     print("\n--- CONCLUIR TAREFA ---")
     
@@ -177,6 +199,7 @@ def concluir_tarefa(lista_tarefas):
                 print(f"[AVISO] A tarefa '{tarefa_selecionada['titulo']}' já está marcada como Concluída!")
             else:
                 tarefa_selecionada["status"] = "Concluído"
+                salvar_dados(lista_tarefas)
                 print(f"\n[SUCESSO] Tarefa '{tarefa_selecionada['titulo']}' foi marcada como CONCLUÍDA!")
 
             # Pergunta se o usuário deseja remover a tarefa após ser marcada como concluída
@@ -189,7 +212,7 @@ def concluir_tarefa(lista_tarefas):
 
 
 def atualizar_tarefa(lista_tarefas):
-    """Permite ao usuário atualizar os dados de uma tarefa existente."""
+    """Permite ao usuário atualizar os dados de uma tarefa existente e persiste as mudanças."""
     print("\n--- ATUALIZAR DADOS DA TAREFA ---")
     
     if not lista_tarefas:
@@ -255,17 +278,19 @@ def atualizar_tarefa(lista_tarefas):
             if nova_est:
                 tarefa['estimativa'] = nova_est
                 
-            print(f"\n[SUCESSO] Tarefa atualizada com sucesso!")
+            salvar_dados(lista_tarefas)
+            print(f"\n[SUCESSO] Tarefa atualizada e salva com sucesso!")
             break
         else:
             print(f"[ERRO] Número inválido! Escolha um número entre 1 e {len(lista_tarefas)}.")
 
 
 def main():
-    """Função principal que gerencia o fluxo de execução do programa."""
-    tarefas = []
+    """Função principal que gerencia o fluxo de execução do programa com carga inicial de dados."""
+    # Carrega as tarefas salvas no arquivo JSON ao iniciar o programa
+    tarefas = carregar_dados()
     
-    print("Bem-vindo ao TaskTracker!")
+    print(f"Bem-vindo ao TaskTracker! ({len(tarefas)} tarefa(s) carregada(s) do arquivo).")
     
     while True:
         exibir_menu()
