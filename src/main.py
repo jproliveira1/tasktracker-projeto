@@ -10,10 +10,11 @@ def exibir_menu():
     print("           TASKTRACKER - MENU           ")
     print("========================================")
     print("1. Cadastrar nova tarefa")
-    print("2. Visualizar tarefas cadastradas (Ordenadas)")
+    print("2. Visualizar tarefas cadastradas")
     print("3. Concluir uma tarefa")
     print("4. Atualizar dados de uma tarefa")
-    print("5. Sair da aplicação")
+    print("5. Remover uma tarefa")
+    print("6. Sair da aplicação")
     print("========================================")
 
 
@@ -79,13 +80,13 @@ def visualizar_tarefas(lista_tarefas):
         "Baixa": 3
     }
 
-    # Cria uma cópia da lista ordenada usando o peso da prioridade como critério
+    # Ordena mantendo a posição relativa dos elementos
     tarefas_ordenadas = sorted(
         lista_tarefas, 
         key=lambda t: peso_prioridade.get(t['prioridade'], 4)
     )
 
-    # Exibição iterativa das tarefas ordenadas
+    # Exibição iterativa das tarefas
     for indice, tarefa in enumerate(tarefas_ordenadas, start=1):
         print(f"\n[{indice}] Título: {tarefa['titulo']}")
         print(f"    Descrição: {tarefa['descricao']}")
@@ -97,8 +98,56 @@ def visualizar_tarefas(lista_tarefas):
     print("-" * 40)
 
 
+def remover_tarefa(lista_tarefas, indice_tarefa=None):
+    """
+    Remove uma tarefa da lista.
+    Caso a tarefa não esteja concluída, exige confirmação do usuário.
+    """
+    if not lista_tarefas:
+        print("Aviso: Nenhuma tarefa cadastrada para ser removida.")
+        return False
+
+    # Se não foi passado um índice diretamente, solicita ao usuário
+    if indice_tarefa is None:
+        visualizar_tarefas(lista_tarefas)
+        while True:
+            entrada = input("\nDigite o número da tarefa que deseja REMOVER (ou '0' para cancelar): ").strip()
+            if not entrada.isdigit():
+                print("[ERRO] Por favor, digite um número válido.")
+                continue
+            
+            numero = int(entrada)
+            if numero == 0:
+                print("Operação de remoção cancelada.")
+                return False
+            
+            if 1 <= numero <= len(lista_tarefas):
+                indice_tarefa = numero - 1
+                break
+            else:
+                print(f"[ERRO] Número inválido! Escolha um número entre 1 e {len(lista_tarefas)}.")
+
+    tarefa = lista_tarefas[indice_tarefa]
+
+    # Validação de confirmação para tarefas PENDENTES
+    if tarefa["status"] != "Concluído":
+        print(f"\n[ATENÇÃO] A tarefa '{tarefa['titulo']}' ainda consta como PENDENTE!")
+        confirmacao = input("Tem certeza de que deseja removê-la sem concluir? (S/N): ").strip().upper()
+        if confirmacao not in ["S", "SIM"]:
+            print("Remoção cancelada pelo usuário.")
+            return False
+
+    # Remoção da lista
+    lista_tarefas.pop(indice_tarefa)
+    print(f"\n[SUCESSO] Tarefa '{tarefa['titulo']}' removida com sucesso!")
+    return True
+
+
 def concluir_tarefa(lista_tarefas):
-    """Permite ao usuário selecionar uma tarefa pendente e alterar seu status para 'Concluído'."""
+    """
+    Permite ao usuário marcar uma tarefa como 'Concluído'
+    e opcionalmente removê-la da lista logo em seguida.
+    """
     print("\n--- CONCLUIR TAREFA ---")
     
     if not lista_tarefas:
@@ -121,14 +170,19 @@ def concluir_tarefa(lista_tarefas):
             break
             
         if 1 <= numero <= len(lista_tarefas):
-            # Nota: Para garantir consistência na seleção, mantemos a referência direta
-            tarefa_selecionada = lista_tarefas[numero - 1]
+            indice = numero - 1
+            tarefa_selecionada = lista_tarefas[indice]
             
             if tarefa_selecionada["status"] == "Concluído":
                 print(f"[AVISO] A tarefa '{tarefa_selecionada['titulo']}' já está marcada como Concluída!")
             else:
                 tarefa_selecionada["status"] = "Concluído"
                 print(f"\n[SUCESSO] Tarefa '{tarefa_selecionada['titulo']}' foi marcada como CONCLUÍDA!")
+
+            # Pergunta se o usuário deseja remover a tarefa após ser marcada como concluída
+            resposta_remover = input("\nGostaria de remover esta tarefa concluída da lista? (S/N): ").strip().upper()
+            if resposta_remover in ["S", "SIM"]:
+                remover_tarefa(lista_tarefas, indice_tarefa=indice)
             break
         else:
             print(f"[ERRO] Número inválido! Escolha um número entre 1 e {len(lista_tarefas)}.")
@@ -215,7 +269,7 @@ def main():
     
     while True:
         exibir_menu()
-        opcao = input("Escolha uma opção (1-5): ").strip()
+        opcao = input("Escolha uma opção (1-6): ").strip()
 
         if opcao == "1":
             cadastrar_tarefa(tarefas)
@@ -226,10 +280,12 @@ def main():
         elif opcao == "4":
             atualizar_tarefa(tarefas)
         elif opcao == "5":
+            remover_tarefa(tarefas)
+        elif opcao == "6":
             print("\nEncerrando o TaskTracker. Até a próxima!")
             break
         else:
-            print("\n[ERRO] Opção inválida! Por favor, escolha um número entre 1 e 5.")
+            print("\n[ERRO] Opção inválida! Por favor, escolha um número entre 1 e 6.")
 
 
 if __name__ == "__main__":
