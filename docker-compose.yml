@@ -1,0 +1,6 @@
+services:
+  tasktracker:
+    build: .
+    container_name: tasktracker-app
+    stdin_open: true   # Mantém o canal de entrada de dados aberto (STDIN)[cite: 31]
+    tty: true          # Aloca um pseudo-terminal virtual interativo[cite: 31]
